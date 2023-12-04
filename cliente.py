@@ -1,7 +1,7 @@
 import socket
 
 # Configuração do cliente
-HOST = '127.0.0.1'
+HOST = '10.0.0.152'
 PORT = 12345
 
 # Função para solicitar e imprimir a lista de itens
