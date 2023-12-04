@@ -1,5 +1,6 @@
 import socket
 import time
+import threading
 
 # Função para lidar com lances
 def process_bid(name, item_id, new_bid):
@@ -22,6 +23,28 @@ def get_item_list():
     item_list = "\n".join([f"ID: {index} - Item: {item} - Valor: R${value}" for index, (item, value) in enumerate(items.items(), start=1)])
     return f"===== Leilão da Polícia Federal =====\n{item_list}\n======================"
 
+# Função para lidar com um cliente
+def handle_client(conn):
+    while True:
+        data = conn.recv(1024).decode()
+        if not data:
+            break
+
+        if data == "LIST_ITEMS_REQUEST":
+            response = get_item_list()
+        elif data.startswith("BID"):
+            try:
+                _, name, item_id, new_bid = data.split()
+                response = process_bid(name, int(item_id), int(new_bid))
+            except ValueError:
+                response = "\n❗ Formato de lance inválido"
+        else:
+            response = "\n❗ INVALID REQUEST"
+
+        conn.sendall(response.encode())
+
+    conn.close()
+
 # Configuração do servidor
 HOST = '127.0.0.1'
 PORT = 12345
@@ -30,41 +53,22 @@ PORT = 12345
 items = {'iPhone 13 Pro (128GB)': 4999, 'Laptop Dell XPS 15': 6499, 'Samsung Galaxy Tab S7+': 2299, 'NVIDIA GeForce RTX 3080': 1999}
 highest_bids = {item: ("", 0) for item in items}  # Inicializa os maiores lances como vazio para cada item
 
-# Configuração do socket
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
     server_socket.bind((HOST, PORT))
     server_socket.listen()
 
     print(f"Servidor ouvindo em {HOST}:{PORT}")
 
-    # Tempo limite para o leilão (exemplo de 5 minutos)
-    tempo_limite = time.time() + 300  # 5 minutos em segundos
+    # Tempo limite para o leilão (exemplo de 1 minuto)
+    tempo_limite = time.time() + 60  # 1 minuto em segundos
 
     while time.time() < tempo_limite:
         conn, addr = server_socket.accept()
-        with conn:
-            print(f"Conectado por {addr}")
-            while True:
-                data = conn.recv(1024).decode()
-                if not data:
-                    break
+        print(f"Conectado por {addr}")
 
-                # Processa a mensagem do cliente
-                if data == "LIST_ITEMS_REQUEST":
-                    response = get_item_list()
-                elif data.startswith("BID"):
-                    try:
-                        _, name, item_id, new_bid = data.split()
-                        response = process_bid(name, int(item_id), int(new_bid))
-                    except ValueError:
-                        response = "\n❗ Formato de lance inválido"
-                else:
-                    response = "\n❗ INVALID REQUEST"
+        client_thread = threading.Thread(target=handle_client, args=(conn,))
+        client_thread.start()
 
-                # Envia resposta de volta ao cliente
-                conn.sendall(response.encode())
-
-    # Após atingir o tempo limite
     print("\nLeilão encerrado. Resultados finais:")
     for item, (name, bid) in highest_bids.items():
         if name != "":
