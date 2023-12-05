@@ -1,6 +1,6 @@
 # Projeto-Redes1
 Projeto final da disciplina de redes 1, curso de cic, 2023.1
-
+Discentes: Alberto Henrique e Andressa Peixoto
 ## Protocolo da Camada de Aplicação
 ### 1. Visão Geral:
 O protocolo da camada de aplicação permite a comunicação entre um cliente e um servidor para realizar um leilão de itens. O protocolo envolve trocas de mensagens e segue uma sequência de eventos para manter o software funcionando corretamente.
